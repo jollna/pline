@@ -20,7 +20,8 @@ namespace NetSelection
             double numDouble1Y = 0;
             double width = 0; //初始化线宽
             short colorIndex = 0; //初始化颜色索引值
-            int SumLine = 1;
+            //int SumLine = 1;
+            int SumLine;
             int index = 2; //初始化多段线顶点数
             ObjectId polyEntId = ObjectId.Null; //声明多段线的ObjectId
             SumLine = GetSumLine();
@@ -58,7 +59,8 @@ namespace NetSelection
             //如果用户输入点或关键字，则一直循环
             while (resKey.Status == PromptStatus.OK || resKey.Status == PromptStatus.Keyword)
             {
-                Point3d ptNexts = new Point3d();
+                //Point3d ptNexts = new Point3d();
+                Point3d ptNexts ;
                 Point3d ptNext = new Point3d();//声明下一个输入点
                 //如果用户输入的是关键字集合对象中的关键字
                 if (resKey.Status == PromptStatus.Keyword)
@@ -186,7 +188,7 @@ namespace NetSelection
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             //定义一个整数的用户交互类
             PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入增量值，默认为1");
-            optInt.DefaultValue = 0; //设置默认值
+            optInt.DefaultValue = 1; //设置默认值
             //返回一个整数提示类
             PromptIntegerResult resInt = ed.GetInteger(optInt);
             if (resInt.Status == PromptStatus.OK)
@@ -196,7 +198,7 @@ namespace NetSelection
                 return SumLine;
             }
             else
-                return 0;
+                return 1;
         }
 
         // 得到用户输入线宽的函数.
@@ -222,8 +224,10 @@ namespace NetSelection
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             //定义一个整数的用户交互类
-            PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入颜色索引值(0～256)");
-            optInt.DefaultValue = 0; //设置默认值
+            PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入颜色索引值(0～256)")
+            {
+                DefaultValue = 0 //设置默认值
+            };
             //返回一个整数提示类
             PromptIntegerResult resInt = ed.GetInteger(optInt);
             if (resInt.Status == PromptStatus.OK)
@@ -260,14 +264,21 @@ namespace NetSelection
             string str = d.ToString();
             string[] strs = str.Split('.');
             int idot = str.IndexOf('.');
-            string prestr = strs[0];
-            string poststr = strs[1];
-            if (poststr.Length > i)
+            if (strs.Length == 2)
             {
-                poststr = str.Substring(idot + 1, i);
+                string prestr = strs[0];
+                string poststr = strs[1];
+                if (poststr.Length > i)
+                {
+                    poststr = str.Substring(idot + 1, i);
+                }
+                string strd = prestr + "." + poststr;
+                d = Double.Parse(strd);
             }
-            string strd = prestr + "." + poststr;
-            d = Double.Parse(strd);
+            else
+#pragma warning disable CS1717 // 对同一变量进行了赋值
+                d = d;
+#pragma warning restore CS1717 // 对同一变量进行了赋值
             return d;
         }
     }
