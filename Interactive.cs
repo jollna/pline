@@ -16,18 +16,17 @@ namespace NetSelection
             Document doc = Application.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
-            double numDouble1X = 0;
-            double numDouble1Y = 0;
             double width = 0; //初始化线宽
             short colorIndex = 0; //初始化颜色索引值
-            //int SumLine = 1;
             int SumLine;
             int index = 2; //初始化多段线顶点数
             ObjectId polyEntId = ObjectId.Null; //声明多段线的ObjectId
             SumLine = GetSumLine();
             //定义第一个点的用户交互类
-            PromptPointOptions optPoint = new PromptPointOptions("\n请输入第一个点<100,200>");
-            optPoint.AllowNone = true; //允许用户回车响应
+            PromptPointOptions optPoint = new PromptPointOptions("\n请输入第一个点<100,200>")
+            {
+                AllowNone = true //允许用户回车响应
+            };
             //返回点的用户提示类
             PromptPointResult resPoint = ed.GetPoint(optPoint);
             //用户按下ESC键，退出
@@ -59,7 +58,6 @@ namespace NetSelection
             //如果用户输入点或关键字，则一直循环
             while (resKey.Status == PromptStatus.OK || resKey.Status == PromptStatus.Keyword)
             {
-                //Point3d ptNexts = new Point3d();
                 Point3d ptNexts ;
                 Point3d ptNext = new Point3d();//声明下一个输入点
                 //如果用户输入的是关键字集合对象中的关键字
@@ -99,48 +97,7 @@ namespace NetSelection
                 else
                 {
                     ptNexts = resKey.Value;//得到户输入的下一点
-                    string[] PreviousSmallX = ptPrevious[0].ToString().Split('.');
-                    string[] NextIntX = ptNexts[0].ToString().Split('.');
-                    string[] PreviousSmallY = ptPrevious[1].ToString().Split('.');
-                    string[] NextIntY = ptNexts[1].ToString().Split('.');
-
-                    //判断坐标点是否为整数，输出不同的对应坐标
-                    if (PreviousSmallY.Length == 2 && PreviousSmallX.Length == 2)
-                    {
-                        int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
-                        int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
-                        string Y = sumY + "." + PreviousSmallY[1];
-                        string X = sumX + "." + PreviousSmallX[1];
-                        numDouble1Y = double.Parse(Y);
-                        numDouble1X = double.Parse(X);
-                    }
-                    else if (PreviousSmallY.Length == 1 && PreviousSmallX.Length == 1) {
-                        int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
-                        int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
-                        string Y = sumY.ToString();
-                        string X = sumX.ToString();
-                        numDouble1Y = double.Parse(Y);
-                        numDouble1X = double.Parse(X);
-                    }
-                    else if (PreviousSmallY.Length == 1) {
-                        int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
-                        int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
-                        string Y = sumY.ToString();
-                        string X = sumX + "." + PreviousSmallX[1];
-                        numDouble1Y = double.Parse(Y);
-                        numDouble1X = double.Parse(X);
-                    }
-                    else if (PreviousSmallX.Length == 1)
-                    {
-                        int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
-                        int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
-                        string Y = sumY + "." + PreviousSmallY[1];
-                        string X = sumX.ToString();
-                        numDouble1Y = double.Parse(Y);
-                        numDouble1X = double.Parse(X);
-                    }
-
-                    ptNext = new Point3d(numDouble1X, numDouble1Y, 0);
+                    ptNext = GetNewPoint(ptPrevious, ptNexts, SumLine);
 
                     if (index == 2) //新建多段线
                     {
@@ -187,8 +144,10 @@ namespace NetSelection
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             //定义一个整数的用户交互类
-            PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入增量值，默认为1");
-            optInt.DefaultValue = 1; //设置默认值
+            PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入增量值，默认为1")
+            {
+                DefaultValue = 1 //设置默认值
+            };
             //返回一个整数提示类
             PromptIntegerResult resInt = ed.GetInteger(optInt);
             if (resInt.Status == PromptStatus.OK)
@@ -206,9 +165,11 @@ namespace NetSelection
         {
             Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
             //定义一个实数的用户交互类.
-            PromptDoubleOptions optDou = new PromptDoubleOptions("\n请输入线宽");
-            optDou.AllowNegative = false; //不允许输入负数
-            optDou.DefaultValue = 0; //设置默认值
+            PromptDoubleOptions optDou = new PromptDoubleOptions("\n请输入线宽")
+            {
+                AllowNegative = false, //不允许输入负数
+                DefaultValue = 0 //设置默认值
+            };
             PromptDoubleResult resDou = ed.GetDouble(optDou);
             if (resDou.Status == PromptStatus.OK)
             {
@@ -242,7 +203,7 @@ namespace NetSelection
             else
                 return 0;
         }
-
+        //得到增量值
         public int GetCoordinate(string ValPrevious, string ValNext,  int SumLine) 
         {
             double length = (double.Parse(ValNext) - double.Parse(ValPrevious)) / SumLine;
@@ -280,6 +241,80 @@ namespace NetSelection
                 d = d;
 #pragma warning restore CS1717 // 对同一变量进行了赋值
             return d;
+        }
+
+        //获取坐标点数据，输出新坐标点数据，保证两点之间的距离为整数
+        public Point3d GetNewPoint(Point3d ptPrevious, Point3d ptNext, int SumLine) 
+        {
+            double numDouble1X = 0;
+            double numDouble1Y = 0;
+
+            string[] PreviousSmallX = ptPrevious[0].ToString().Split('.');
+            string[] NextIntX = ptNext[0].ToString().Split('.');
+            string[] PreviousSmallY = ptPrevious[1].ToString().Split('.');
+            string[] NextIntY = ptNext[1].ToString().Split('.');
+
+            if (PreviousSmallY.Length == 2 && PreviousSmallX.Length == 2)
+            {
+                string decimalX = GetQuadrant(ptPrevious[0], ptNext[0]);
+                string decimalY = GetQuadrant(ptPrevious[1], ptNext[1]);
+                int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
+                int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
+                string X = sumX + "." + decimalX;
+                string Y = sumY + "." + decimalY;
+                numDouble1X = double.Parse(X);
+                numDouble1Y = double.Parse(Y);
+            }
+            else if (PreviousSmallY.Length == 1 && PreviousSmallX.Length == 1)
+            {
+                int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
+                int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
+                string Y = sumY.ToString();
+                string X = sumX.ToString();
+                numDouble1Y = double.Parse(Y);
+                numDouble1X = double.Parse(X);
+            }
+            else if (PreviousSmallY.Length == 1)
+            {
+                string decimalX = GetQuadrant(ptPrevious[0], ptNext[0]);
+                int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
+                int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
+                string Y = sumY.ToString();
+                string X = sumX + "." + decimalX;
+                numDouble1Y = double.Parse(Y);
+                numDouble1X = double.Parse(X);
+            }
+            else if (PreviousSmallX.Length == 1)
+            {
+                string decimalY = GetQuadrant(ptPrevious[1], ptNext[1]);
+                int sumY = GetCoordinate(PreviousSmallY[0], NextIntY[0], SumLine);
+                int sumX = GetCoordinate(PreviousSmallX[0], NextIntX[0], SumLine);
+                string Y = sumY + "." + decimalY;
+                string X = sumX.ToString();
+                numDouble1Y = double.Parse(Y);
+                numDouble1X = double.Parse(X);
+            }
+            ptNext = new Point3d(numDouble1X, numDouble1Y, 0);
+            return ptNext;
+        }
+
+        //根据象限判断坐标点数值，保证坐标跨象限也为整数
+        public string GetQuadrant(double ptPrevious, double ptNext)
+        {
+            if ((ptPrevious > 0 && ptNext > 0) || (ptPrevious < 0 && ptNext < 0))
+            {
+                string[] PreviousSmall = ptPrevious.ToString("F8").Split('.');
+                string X = PreviousSmall[1];
+                return X;
+            }else
+            {
+                string[] PreviousSmall = ptPrevious.ToString("F8").Split('.');
+                string Y = "0." + PreviousSmall[1];
+                double numDouble1Y = double.Parse(Y);
+                double X = 1- numDouble1Y;
+                string[] z = X.ToString().Split('.');
+                return z[1];
+            }
         }
     }
 }
