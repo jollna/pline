@@ -4,10 +4,72 @@ using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
+using Autodesk.AutoCAD.Interop;
 using Autodesk.AutoCAD.Runtime;
 using DotNetARX;
+using Microsoft.Win32;
+using pline;
+
 namespace NetSelection
 {
+    public class AcadNetApp : Autodesk.AutoCAD.Runtime.IExtensionApplication
+    {
+        //重写初始化
+        public void Initialize()
+        {
+            //加载后初始化的程序放在这里 这样程序一加载DLL文件就会执行
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            doc.Editor.WriteMessage("\nInitializing......do something useful.");
+            //在此处加载 菜单栏程序
+            Addmenu();
+        }
+
+        //重写结束
+        public void Terminate()
+        {
+            // do somehing to cleanup resource
+        }
+
+        //加载菜单栏
+        //private Document acDoc;  //获取当前的活动文档 
+        //private Editor acEd;
+        public void Addmenu()
+        {
+            
+            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Editor acEd = acDoc.Editor;
+            //Mymainclass mycad = new Mymainclass();
+            acEd.WriteMessage("添加菜单栏\n");
+
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            AcadApplication acadApp = Application.AcadApplication as AcadApplication;
+            AcadPopupMenu PTaddmenu = null;  //新建菜单栏的对象
+            // 创建菜单
+            if (PTaddmenu == null)
+            {
+                PTaddmenu = acadApp.MenuGroups.Item(0).Menus.Add("多段线取整");
+                PTaddmenu.AddMenuItem(PTaddmenu.Count, "设置取整量", "SetSumnumber ");
+            }
+
+            // 菜单是否显示  看看已经显示的菜单栏里面有没有这一栏
+            bool isShowed = false;  //初始化没有显示
+            foreach (AcadPopupMenu menu in acadApp.MenuBar)  //遍历现有所有菜单栏
+            {
+                if (menu == PTaddmenu)
+                {
+                    isShowed = true;
+                    break;
+                }
+            }
+
+            // 显示菜单 加载自定义的菜单栏
+            if (!isShowed)
+            {
+                PTaddmenu.InsertInMenuBar(acadApp.MenuBar.Count);
+            }
+
+        }
+    }
     public class Interactive
     {
         [CommandMethod("Zpl")]
@@ -21,7 +83,6 @@ namespace NetSelection
             int SumLine;
             int index = 2; //初始化多段线顶点数
             ObjectId polyEntId = ObjectId.Null; //声明多段线的ObjectId
-            SumLine = GetSumLine();
             //定义第一个点的用户交互类
             PromptPointOptions optPoint = new PromptPointOptions("\n请输入第一个点<100,200>")
             {
@@ -42,13 +103,12 @@ namespace NetSelection
                 ptStart = resPoint.Value;
             Point3d ptPrevious = ptStart;//保存当前点
             //定义输入下一点的点交互类
-            PromptPointOptions optPtKey = new PromptPointOptions("\n请输入下一个点或[增量(S)/线宽(W)/颜色(Y)/闭合(C)/完成(O)]<O>");
+            PromptPointOptions optPtKey = new PromptPointOptions("\n请输入下一个点或[线宽(W)/颜色(Y)/闭合(C)/完成(O)]<O>");
             //为点交互类添加关键字
             optPtKey.Keywords.Add("W");
             optPtKey.Keywords.Add("C");
             optPtKey.Keywords.Add("Y");
             optPtKey.Keywords.Add("O");
-            optPtKey.Keywords.Add("S");
             optPtKey.Keywords.Default = "O"; //设置默认的关键字
             optPtKey.UseBasePoint = true; //允许使用基准点
             optPtKey.BasePoint = ptPrevious;//设置基准点
@@ -65,9 +125,6 @@ namespace NetSelection
                 {
                     switch (resKey.StringResult)
                     {
-                        case "S":
-                            SumLine = GetSumLine();
-                            break;
                         case "W":
                             width = GetWidth();
                             break;
@@ -96,6 +153,8 @@ namespace NetSelection
                 }
                 else
                 {
+                    object tLong = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Autodesk\\AutoCAD\\R19.1\\ACAD-D001:804\\Applications\\RoundPline", "SumLine", 0);
+                    SumLine = int.Parse((string)tLong);
                     ptNexts = resKey.Value;//得到户输入的下一点
                     ptNext = GetNewPoint(ptPrevious, ptNexts, SumLine);
 
@@ -140,25 +199,25 @@ namespace NetSelection
         }
 
         //获取增量值
-        public int GetSumLine()
-        {
-            Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
-            //定义一个整数的用户交互类
-            PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入增量值，默认为1")
-            {
-                DefaultValue = 1 //设置默认值
-            };
-            //返回一个整数提示类
-            PromptIntegerResult resInt = ed.GetInteger(optInt);
-            if (resInt.Status == PromptStatus.OK)
-            {
-                //得到用户输入的增量值
-                int SumLine = resInt.Value;
-                return SumLine;
-            }
-            else
-                return 1;
-        }
+        //public int GetSumLine()
+        //{
+        //    Editor ed = Application.DocumentManager.MdiActiveDocument.Editor;
+        //    //定义一个整数的用户交互类
+        //    PromptIntegerOptions optInt = new PromptIntegerOptions("\n请输入增量值，默认为1")
+        //    {
+        //        DefaultValue = 1 //设置默认值
+        //    };
+        //    //返回一个整数提示类
+        //    PromptIntegerResult resInt = ed.GetInteger(optInt);
+        //    if (resInt.Status == PromptStatus.OK)
+        //    {
+        //        //得到用户输入的增量值
+        //        int SumLine = resInt.Value;
+        //        return SumLine;
+        //    }
+        //    else
+        //        return 1;
+        //}
 
         // 得到用户输入线宽的函数.
         public double GetWidth()
@@ -315,6 +374,13 @@ namespace NetSelection
                 string[] z = X.ToString().Split('.');
                 return z[1];
             }
+        }
+
+        [CommandMethod("SetSumnumber")]
+        public void SetSumnumber()
+        {
+            Form1 myfrom = new Form1();
+            Autodesk.AutoCAD.ApplicationServices.Application.ShowModelessDialog(myfrom); //在CAD里头显示界面  非模态显示
         }
     }
 }
