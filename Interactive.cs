@@ -66,7 +66,7 @@ namespace pline
             //如果用户输入点或关键字，则一直循环
             while (resKey.Status == PromptStatus.OK || resKey.Status == PromptStatus.Keyword)
             {
-                Point3d ptNexts ;
+                Point3d ptNexts;
                 Point3d ptNext = new Point3d();//声明下一个输入点
                 //如果用户输入的是关键字集合对象中的关键字
                 if (resKey.Status == PromptStatus.Keyword)
@@ -110,7 +110,7 @@ namespace pline
                     if (index == 2) //新建多段线
                     {
                         //提取三维点的X、Y坐标值，转化为二维点
-                        Point2d pt1 = new Point2d(ptPrevious[0],ptPrevious[1]);
+                        Point2d pt1 = new Point2d(ptPrevious[0], ptPrevious[1]);
                         Point2d pt2 = new Point2d(ptNext[0], ptNext[1]);
                         Polyline polyEnt = new Polyline();//新建一条多段线
                         //给多段线添加顶点，设置线宽
@@ -191,7 +191,7 @@ namespace pline
                 return 0;
         }
         //得到增量值
-        public int GetCoordinate(string ValPrevious, string ValNext,  int SumLine) 
+        public int GetCoordinate(string ValPrevious, string ValNext, int SumLine)
         {
             double length = (double.Parse(ValNext) - double.Parse(ValPrevious)) / SumLine;
             double Roundlength = Round(length, 0);
@@ -231,7 +231,7 @@ namespace pline
         }
 
         //获取坐标点数据，输出新坐标点数据，保证两点之间的距离为整数
-        public Point3d GetNewPoint(Point3d ptPrevious, Point3d ptNext, int SumLine) 
+        public Point3d GetNewPoint(Point3d ptPrevious, Point3d ptNext, int SumLine)
         {
             double numDouble1X = 0;
             double numDouble1Y = 0;
@@ -295,12 +295,13 @@ namespace pline
                 string[] PreviousSmall = ptPrevious.ToString("F8").Split('.');
                 string X = PreviousSmall[1];
                 return X;
-            }else
+            }
+            else
             {
                 string[] PreviousSmall = ptPrevious.ToString("F8").Split('.');
                 string Y = "0." + PreviousSmall[1];
                 double numDouble1Y = double.Parse(Y);
-                double X = 1- numDouble1Y;
+                double X = 1 - numDouble1Y;
                 string[] z = X.ToString().Split('.');
                 return z[1];
             }
@@ -322,6 +323,14 @@ namespace pline
             {
                 return ptNext;
             }
+        }
+
+        [CommandMethod("Zplc")]
+        public void OpenAddPolyForm()
+        {
+            Form1 myfrom = new Form1();
+            Autodesk.AutoCAD.ApplicationServices.Application.ShowModelessDialog(myfrom); //在CAD里头显示界面  非模态显示
+            Registry.SetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Autodesk\\AutoCAD\\R19.1\\ACAD-D001:804\\Applications\\RoundPline", "FormDisplay", "on");
         }
     }
 }
